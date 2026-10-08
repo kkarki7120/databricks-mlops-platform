@@ -1,0 +1,30 @@
+# Databricks Asset Bundle: infrastructure-as-code for the Databricks side of this project.
+# `databricks bundle deploy -t <target>` uploads notebooks + src and creates/updates the jobs below.
+bundle:
+  name: databricks-mlops-platform
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog that holds the bronze/silver/gold/ml schemas
+    default: support_ai
+  embedding_endpoint:
+    description: Foundation Model API embedding endpoint
+    default: databricks-gte-large-en
+  llm_endpoint:
+    description: Foundation Model API chat endpoint
+    default: databricks-meta-llama-3-3-70b-instruct
+
+# Host and token come from the environment (DATABRICKS_HOST / DATABRICKS_TOKEN),
+# set as GitHub secrets in CI or by `databricks auth login` locally.
+targets:
+  dev:
+    mode: development     # resources prefixed "[dev <user>]", schedules paused
+    default: true
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}

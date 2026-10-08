@@ -1,0 +1,18 @@
+resources:
+  jobs:
+    cv_training:
+      name: cv-shape-classifier-training
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../notebooks/00_setup.py
+            base_parameters:
+              catalog: ${var.catalog}
+
+        - task_key: train_register_infer
+          depends_on: [{ task_key: setup }]
+          notebook_task:
+            notebook_path: ../notebooks/10_cv_training.py
+            base_parameters:
+              catalog: ${var.catalog}

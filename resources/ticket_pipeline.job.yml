@@ -1,0 +1,36 @@
+resources:
+  jobs:
+    ticket_pipeline:
+      name: ticket-priority-pipeline
+      max_concurrent_runs: 1
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"   # daily 06:00
+        timezone_id: Asia/Kathmandu
+        pause_status: PAUSED
+      tasks:
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../notebooks/00_setup.py
+            base_parameters:
+              catalog: ${var.catalog}
+
+        - task_key: data_pipeline
+          depends_on: [{ task_key: setup }]
+          notebook_task:
+            notebook_path: ../notebooks/01_data_pipeline.py
+            base_parameters:
+              catalog: ${var.catalog}
+
+        - task_key: train_and_register
+          depends_on: [{ task_key: data_pipeline }]
+          notebook_task:
+            notebook_path: ../notebooks/02_train_mlflow.py
+            base_parameters:
+              catalog: ${var.catalog}
+
+        - task_key: batch_inference
+          depends_on: [{ task_key: train_and_register }]
+          notebook_task:
+            notebook_path: ../notebooks/03_batch_inference.py
+            base_parameters:
+              catalog: ${var.catalog}

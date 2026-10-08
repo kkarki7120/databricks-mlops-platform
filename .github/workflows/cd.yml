@@ -1,0 +1,49 @@
+name: CD
+
+# Push/merge to main -> test -> deploy the bundle to PROD.
+# Manual run (Actions tab -> CD -> Run workflow) can also trigger one of the jobs after deploying.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_job:
+        description: Job to run after deploying
+        type: choice
+        default: none
+        options: [none, ticket_pipeline, cv_training, rag_pipeline]
+
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: pytest -q
+
+  deploy-prod:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production   # add required reviewers in GitHub to get a manual approval gate
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - name: Validate bundle
+        run: databricks bundle validate -t prod
+      - name: Deploy to prod
+        run: databricks bundle deploy -t prod
+      - name: Run job
+        if: github.event_name == 'workflow_dispatch' && inputs.run_job != 'none'
+        run: databricks bundle run -t prod ${{ inputs.run_job }}

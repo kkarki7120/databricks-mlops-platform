@@ -1,0 +1,16 @@
+[project]
+name = "databricks-mlops-platform"
+version = "0.1.0"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 120
+# Notebooks rely on Databricks globals (spark, dbutils, display) and magics, so lint src/ and tests/ only
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
